@@ -1,22 +1,40 @@
-// Copyright (c) 2011 The Chromium Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
-// When the extension is installed or upgraded ...
-chrome.runtime.onInstalled.addListener(function() {
-    // Replace all rules ...
-    chrome.declarativeContent.onPageChanged.removeRules(undefined, function() {
-      // With a new rule ...
-      chrome.declarativeContent.onPageChanged.addRules([
-        {
-          // That fires when a page's URL contains a 'g' ...
-          conditions: [
-            new chrome.declarativeContent.PageStateMatcher({
-              pageUrl: { urlContains: 'canvas.skku.edu' },
-            })
-          ],
-          // And shows the extension's page action.
-          actions: [ new chrome.declarativeContent.ShowPageAction() ]
-        }
-      ]);
+// Function to enable or disable the extension
+function setExtensionState(tabId, enabled) {
+  if (enabled) {
+    browser.action.enable(tabId);
+    browser.action.setIcon({
+      tabId: tabId,
+      path: "icon.png",
     });
+  } else {
+    browser.action.disable(tabId);
+    browser.action.setIcon({
+      tabId: tabId,
+      path: "icon.png",
+    });
+  }
+}
+
+// Listen for tab updates
+browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.url) {
+    const enabled = changeInfo.url.includes("canvas.skku.edu");
+    setExtensionState(tabId, enabled);
+  }
+});
+
+// Check already open tabs
+browser.tabs.query({}).then((tabs) => {
+  for (let tab of tabs) {
+    const enabled = tab.url.includes("canvas.skku.edu");
+    setExtensionState(tab.id, enabled);
+  }
+});
+
+// Listen for tab activation
+browser.tabs.onActivated.addListener((activeInfo) => {
+  browser.tabs.get(activeInfo.tabId).then((tab) => {
+    const enabled = tab.url.includes("canvas.skku.edu");
+    setExtensionState(tab.id, enabled);
   });
+});
