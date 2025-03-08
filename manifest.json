@@ -7,20 +7,20 @@
 
   "browser_specific_settings": {
     "gecko": {
-      "id": "addon@example.com",
-      "strict_min_version": "48.0"
+      "id": "sjssjs1344@gmail.com",
+      "strict_min_version": "109.0"
     }
   },
 
   "content_scripts": [
     {
       "matches": ["*://canvas.skku.edu/*"],
-      "js": ["content.js", "jquery-3.5.0.min.js"]
+      "js": ["content.js", "jquery-3.7.1.min.js"]
     }
   ],
 
   "background": {
-    "scripts": ["background.js"]
+    "service_worker": "background.js"
   },
 
   "action": {

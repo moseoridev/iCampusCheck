@@ -1,20 +1,15 @@
-//html DOM이 로드된 후 실행
+// html DOM이 로드된 후 실행
 document.addEventListener("DOMContentLoaded", function () {
-  // SIOR 전시회 홍보 그림에 링크
-  // document.getElementById('poster').addEventListener('click', function(event){
-  //     moveToContent("http://sior.ddns.net/exhibition-2020/");
-  // });
-
   checkTokenAndRun();
 });
 
-//필요한 토큰이 발행되었는지 확인하고, (x)이면 새창열어 토큰 발행(로딩시간생각해서 반복)
+// 필요한 토큰이 발행되었는지 확인하고, (x)이면 새창열어 토큰 발행(로딩시간생각해서 반복)
 function checkTokenAndRun() {
-  //xn_api_token이 발행되지 않았다면, https://canvas.skku.edu/api/v1/courses에서 과목id를 가져와 새 창을 연다.
-  browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
+  // xn_api_token이 발행되지 않았다면, https://canvas.skku.edu/api/v1/courses에서 과목 id를 가져와 새 창을 연다.
+  chrome.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
     const tabId = tabs[0].id;
 
-    browser.scripting
+    chrome.scripting
       .executeScript({
         target: { tabId: tabId },
         func: () => {
@@ -48,10 +43,10 @@ function checkTokenAndRun() {
           while (result[index].name == null) index = index + 1;
           const action_url = `https://canvas.skku.edu/courses/${result[index].id}/external_tools/5`;
 
-          browser.tabs.create({ url: action_url, active: false });
+          chrome.tabs.create({ url: action_url, active: false });
 
           const timerID = setInterval(() => {
-            browser.scripting
+            chrome.scripting
               .executeScript({
                 target: { tabId: tabId },
                 func: () => getCookie("xn_api_token"),
@@ -70,12 +65,12 @@ function checkTokenAndRun() {
   });
 }
 
-//executescript.js를 실행해, 필요한 데이터 가져오기
+// executescript.js를 실행해, 필요한 데이터 가져오기
 function getLearnStatus() {
-  browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
+  chrome.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
     const tabId = tabs[0].id;
 
-    browser.scripting
+    chrome.scripting
       .executeScript({
         target: { tabId: tabId },
         files: ["/executescript.js"],
@@ -116,12 +111,12 @@ function getLearnStatus() {
   });
 }
 
-//새창열기
+// 새창열기
 function moveToContent(action_url) {
-  browser.tabs.create({ url: action_url, active: false });
+  chrome.tabs.create({ url: action_url, active: false });
 }
 
-//html에 ToDoList 띄우기
+// html에 ToDoList 띄우기
 function viewToDo(thingsToDo, callback) {
   var lecture = document.querySelector("#lecture");
   var assignment = document.querySelector("#assignment");
@@ -140,7 +135,7 @@ function viewToDo(thingsToDo, callback) {
   callback();
 }
 
-//table에 삽입 할 내용
+// table에 삽입 할 내용
 function add_HTMLTAG(data, type) {
   var HTML_data =
     '<thead><tr><th class="colum1">과목</th><th class="colum2">제목</th><th class="colum3">마감기한</th><th class="colum4">남은시간</th></tr></thead><tbody>';
@@ -164,7 +159,7 @@ function add_HTMLTAG(data, type) {
   return HTML_data;
 }
 
-//적게남은 시간, 과목명, 과제명 순으로 정렬
+// 적게남은 시간, 과목명, 과제명 순으로 정렬
 function sortToDo(thingsToDo) {
   thingsToDo.lecture.sort(function (a, b) {
     return a["remainingTime_ms"] - b["remainingTime_ms"];
@@ -175,12 +170,12 @@ function sortToDo(thingsToDo) {
   return thingsToDo;
 }
 
-//시간차 계산
+// 시간차 계산
 function gapTime(now, date) {
   return new Date(date).getTime() - now.getTime();
 }
 
-//남은시간을 보기좋게 만들기
+// 남은시간을 보기좋게 만들기
 function msToTime(time_ms) {
   var time_out = "";
   var minutes = parseInt((time_ms / (1000 * 60)) % 60);
@@ -195,7 +190,7 @@ function msToTime(time_ms) {
   return time_out;
 }
 
-//마감기한을 보기좋게 만들기
+// 마감기한을 보기좋게 만들기
 function dateToLocaleString(date) {
   newdate = new Date(date);
   return (
@@ -211,19 +206,19 @@ function dateToLocaleString(date) {
   );
 }
 
-//요일찾기
+// 요일찾기
 function dayOfWeek(date) {
   var week = ["일", "월", "화", "수", "목", "금", "토"];
   return week[date.getDay()];
 }
 
-//보기좋게 하기 위해 (한자리 수)면 앞에 공백 추가, 글꼴 수정한다면, 여기 수정해야함!!
+// 보기좋게 하기 위해 (한자리 수)면 앞에 공백 추가, 글꼴 수정한다면, 여기 수정해야함!!
 function addSpace(num) {
   if (num < 10) return "&nbsp&nbsp" + num;
   else return num;
 }
 
-//영문자 사이에 언더바(_)가 있으면 자동 줄바꿈이 안됨. 언더바를 공백으로 바꾸자.
+// 영문자 사이에 언더바(_)가 있으면 자동 줄바꿈이 안됨. 언더바를 공백으로 바꾸자.
 function replaceUnderbar(str) {
   return str.replace(/_/g, " ");
 }
