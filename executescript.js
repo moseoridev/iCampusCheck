@@ -13,10 +13,10 @@ function gapTime(now, date) {
   return new Date(date).getTime() - now.getTime();
 }
 
-//GET요청 헤더에 실어보낼 인증 키
+// GET요청 헤더에 실어보낼 인증 키
 var authorizationToken = "Bearer " + getCookie("xn_api_token");
 
-//수강 과목들 가져오기
+// 수강 과목들 가져오기
 var get_courses = {
   url: "https://canvas.skku.edu/api/v1/users/self/favorites/courses",
   method: "GET",
