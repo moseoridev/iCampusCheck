@@ -38,6 +38,13 @@
     "128": "icons/icon128.png"
   },
 
+  "web_accessible_resources": [
+    {
+      "resources": ["utils.js"],
+      "matches": ["*://canvas.skku.edu/*"]
+    }
+  ],
+
   "host_permissions": ["*://canvas.skku.edu/*"],
-  "permissions": ["scripting", "tabs"]
+  "permissions": ["scripting", "tabs", "storage"]
 }

@@ -2,8 +2,79 @@
  * HTML DOM이 로드된 후 실행
  */
 document.addEventListener("DOMContentLoaded", function () {
+  // 시스템 다크모드 감지
+  checkDarkMode();
+
+  // 메인 기능 실행
   checkTokenAndRun();
+
+  // 다크모드 토글 버튼 이벤트 리스너
+  document
+    .getElementById("theme-toggle")
+    .addEventListener("click", toggleTheme);
+
+  // 새로고침 버튼 이벤트 리스너
+  document
+    .getElementById("refresh-button")
+    .addEventListener("click", refreshData);
 });
+
+/**
+ * 시스템 다크모드 감지 및 적용
+ */
+function checkDarkMode() {
+  // 저장된 테마 설정 확인
+  chrome.storage.local.get("darkMode", (result) => {
+    if (result.darkMode) {
+      document.body.classList.add("dark-mode");
+    } else if (result.darkMode === false) {
+      document.body.classList.remove("dark-mode");
+    } else {
+      // 설정이 없는 경우 시스템 설정 따르기
+      if (
+        window.matchMedia &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches
+      ) {
+        document.body.classList.add("dark-mode");
+      }
+    }
+  });
+
+  // 시스템 다크모드 변경 감지
+  window
+    .matchMedia("(prefers-color-scheme: dark)")
+    .addEventListener("change", (e) => {
+      chrome.storage.local.get("darkMode", (result) => {
+        // 사용자가 명시적으로 설정하지 않은 경우에만 시스템 설정 따르기
+        if (result.darkMode === undefined) {
+          if (e.matches) {
+            document.body.classList.add("dark-mode");
+          } else {
+            document.body.classList.remove("dark-mode");
+          }
+        }
+      });
+    });
+}
+
+/**
+ * 다크모드 토글
+ */
+function toggleTheme() {
+  const isDarkMode = document.body.classList.toggle("dark-mode");
+  // 설정 저장
+  chrome.storage.local.set({ darkMode: isDarkMode });
+}
+
+/**
+ * 데이터 새로고침
+ */
+function refreshData() {
+  // 캐시 초기화
+  chrome.storage.local.remove(["courseData", "cacheTimestamp"], () => {
+    checkTokenAndRun();
+  });
+}
 
 /**
  * 오류 메시지를 UI에 표시합니다.
@@ -21,7 +92,7 @@ function showLoading(message = "데이터를 불러오는 중입니다...") {
   document.querySelector("#assignment").innerHTML = `
     <div class="loading">
       <h2>${message}</h2>
-      <img src="loading.svg" alt="Loading" />
+      <div class="spinner"></div>
     </div>
   `;
 }
@@ -35,36 +106,130 @@ async function checkTokenAndRun() {
     const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
     const tabId = tabs[0].id;
 
+    // 캐시된 데이터 확인
+    const cachedData = await checkCache();
+    if (cachedData) {
+      // 캐시된 데이터로 UI 렌더링
+      renderToDoList(cachedData);
+
+      // 백그라운드에서 최신 데이터 확인 (TTL 초과 시에만)
+      const now = Date.now();
+      chrome.storage.local.get("cacheTimestamp", async (result) => {
+        const cacheAge = now - (result.cacheTimestamp || 0);
+        // 캐시가 10분 이상 지났으면 업데이트
+        if (cacheAge > 10 * 60 * 1000) {
+          await refreshDataInBackground(tabId);
+        }
+      });
+
+      return;
+    }
+
     // 토큰 확인
     const tokenResult = await chrome.scripting.executeScript({
       target: { tabId },
-      func: () => getCookie("xn_api_token"),
+      func: () => {
+        return document.cookie
+          .split("; ")
+          .find((row) => row.startsWith("xn_api_token="))
+          ?.split("=")[1];
+      },
     });
     const token = tokenResult[0].result;
 
     if (!token) {
       await generateToken(tabId);
     } else {
-      await getLearnStatus();
+      await getLearnStatus(tabId);
     }
   } catch (error) {
     showError("데이터를 불러오는 중 오류가 발생했습니다. 다시 시도해주세요.");
+    console.log(error);
   }
 }
 
 /**
- * 토큰을 생성합니다.
+ * 캐시된 데이터 확인
+ */
+function checkCache() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(["courseData", "cacheTimestamp"], (result) => {
+      if (result.courseData && result.cacheTimestamp) {
+        const now = Date.now();
+        const cacheAge = now - result.cacheTimestamp;
+
+        // 캐시가 30분 이내라면 사용
+        if (cacheAge < 30 * 60 * 1000) {
+          resolve(result.courseData);
+          return;
+        }
+      }
+      resolve(null);
+    });
+  });
+}
+
+/**
+ * 백그라운드에서 데이터 새로고침
+ */
+async function refreshDataInBackground(tabId) {
+  try {
+    // 토큰 확인
+    const tokenResult = await chrome.scripting.executeScript({
+      target: { tabId },
+      func: () => {
+        return document.cookie
+          .split("; ")
+          .find((row) => row.startsWith("xn_api_token="))
+          ?.split("=")[1];
+      },
+    });
+
+    if (tokenResult[0].result) {
+      // 백그라운드에서 데이터 가져오기
+      const results = await chrome.scripting.executeScript({
+        target: { tabId },
+        files: ["executescript.js"],
+      });
+
+      if (results[0].result) {
+        // 캐시 업데이트
+        chrome.storage.local.set({
+          courseData: results[0].result,
+          cacheTimestamp: Date.now(),
+        });
+      }
+    }
+  } catch (error) {
+    console.error("백그라운드 데이터 업데이트 실패:", error);
+  }
+}
+
+/**
+ * 토큰을 생성합니다. (병렬 처리 최적화)
  */
 async function generateToken(tabId) {
   try {
+    // AbortController로 요청 중단 기능 추가
+    const controller = new AbortController();
+    const signal = controller.signal;
+
+    // 5초 후 자동 중단
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
     // 과목 데이터를 가져와서 새 탭 열기
     const coursesResult = await chrome.scripting.executeScript({
       target: { tabId },
       func: async () => {
         try {
           const response = await fetch(
-            "https://canvas.skku.edu/api/v1/courses"
+            "https://canvas.skku.edu/api/v1/courses",
+            {
+              method: "GET",
+              credentials: "include",
+            }
           );
+
           if (response.ok) {
             return await response.json();
           }
@@ -74,15 +239,28 @@ async function generateToken(tabId) {
         }
       },
     });
+
+    clearTimeout(timeoutId);
     const courses = coursesResult[0].result;
 
     if (courses && courses.length > 0) {
-      // 유효한 과목 찾기
-      let index = 0;
-      while (index < courses.length && !courses[index].name) index++;
+      // Promise.race로 가장 빨리 유효한 과목 찾기
+      const validCoursePromises = courses.map((course, index) => {
+        return new Promise((resolve) => {
+          if (course.name) {
+            resolve({ course, index });
+          } else {
+            resolve(null);
+          }
+        });
+      });
 
-      if (index < courses.length) {
-        const action_url = `https://canvas.skku.edu/courses/${courses[index].id}/external_tools/5`;
+      const validCourses = await Promise.all(validCoursePromises);
+      const firstValidCourse = validCourses.find((result) => result !== null);
+
+      if (firstValidCourse) {
+        const { course } = firstValidCourse;
+        const action_url = `https://canvas.skku.edu/courses/${course.id}/external_tools/5`;
         chrome.tabs.create({ url: action_url, active: false });
 
         showLoading("토큰을 생성하는 중입니다...");
@@ -96,12 +274,18 @@ async function generateToken(tabId) {
       showError("과목 데이터를 가져오지 못했습니다. 다시 시도해주세요.");
     }
   } catch (error) {
-    showError("토큰 생성 중 오류가 발생했습니다. 다시 시도해주세요.");
+    if (error.name === "AbortError") {
+      showError(
+        "요청 시간이 초과되었습니다. 네트워크 연결을 확인하고 다시 시도해주세요."
+      );
+    } else {
+      showError("토큰 생성 중 오류가 발생했습니다. 다시 시도해주세요.");
+    }
   }
 }
 
 /**
- * 토큰이 생성될 때까지 대기합니다.
+ * 토큰이 생성될 때까지 대기합니다. (Promise 기반 대기)
  */
 function waitForToken(tabId) {
   return new Promise((resolve, reject) => {
@@ -111,12 +295,17 @@ function waitForToken(tabId) {
     const checkToken = async () => {
       const tokenCheckResult = await chrome.scripting.executeScript({
         target: { tabId },
-        func: () => getCookie("xn_api_token"),
+        func: () => {
+          return document.cookie
+            .split("; ")
+            .find((row) => row.startsWith("xn_api_token="))
+            ?.split("=")[1];
+        },
       });
 
       if (tokenCheckResult[0].result) {
         clearInterval(timerID);
-        getLearnStatus();
+        await getLearnStatus(tabId);
         resolve(true);
       } else if (attempts >= maxAttempts) {
         clearInterval(timerID);
@@ -134,85 +323,159 @@ function waitForToken(tabId) {
 /**
  * 학습 상태 데이터를 가져옵니다.
  */
-async function getLearnStatus() {
+async function getLearnStatus(tabId) {
   try {
     showLoading("학습 데이터를 가져오는 중입니다...");
 
-    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-    const tabId = tabs[0].id;
+    // AbortController로 요청 중단 기능 추가
+    const controller = new AbortController();
+    const signal = controller.signal;
 
+    // 15초 후 자동 중단
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+    // executescript.js 실행
     const results = await chrome.scripting.executeScript({
       target: { tabId },
-      files: ["/executescript.js"],
+      files: ["executescript.js"],
     });
+
+    clearTimeout(timeoutId);
     const result = results[0].result;
 
     if (result) {
-      const thingsToDo = sortToDo(result);
-      renderToDoList(thingsToDo);
+      // 캐시 업데이트
+      chrome.storage.local.set({
+        courseData: result,
+        cacheTimestamp: Date.now(),
+      });
+
+      renderToDoList(result);
     } else {
       showError("데이터를 불러오지 못했습니다. 새로고침 후 다시 시도해주세요.");
     }
   } catch (error) {
-    showError("데이터 로드 중 오류가 발생했습니다.");
+    if (error.name === "AbortError") {
+      showError(
+        "데이터 로드 시간이 초과되었습니다. 네트워크 연결을 확인하고 다시 시도해주세요."
+      );
+    } else {
+      showError("데이터 로드 중 오류가 발생했습니다.");
+    }
   }
 }
 
 /**
- * 할 일 목록을 정렬합니다.
+ * 항목 개수 배지 업데이트
  */
-function sortToDo(thingsToDo) {
-  thingsToDo.lecture.sort((a, b) => a.remainingTime_ms - b.remainingTime_ms);
-  thingsToDo.assignment.sort((a, b) => a.remainingTime_ms - b.remainingTime_ms);
-  return thingsToDo;
+function updateCountBadges(data) {
+  // 강의 카운트
+  const lectureCount = document.getElementById("lecture-count");
+  if (data.lecture.length > 0) {
+    lectureCount.textContent = data.lecture.length;
+    lectureCount.style.display = "inline-block";
+  } else {
+    lectureCount.style.display = "none";
+  }
+
+  // 과제 카운트
+  const assignmentCount = document.getElementById("assignment-count");
+  if (data.assignment.length > 0) {
+    assignmentCount.textContent = data.assignment.length;
+    assignmentCount.style.display = "inline-block";
+  } else {
+    assignmentCount.style.display = "none";
+  }
 }
 
 /**
  * 할 일 목록을 렌더링하고 이벤트 리스너를 추가합니다.
  */
 function renderToDoList(thingsToDo) {
-  // HTML 생성
-  const lectureHTML = generateTableHTML(thingsToDo.lecture, "강의", "lecture");
-  const assignmentHTML = generateTableHTML(
+  // 성능을 위해 DocumentFragment 사용
+  const lectureFragment = document.createDocumentFragment();
+  const assignmentFragment = document.createDocumentFragment();
+
+  // 이전 이벤트 리스너를 제거하기 위해 이전 요소를 제거
+  const lectureContainer = document.querySelector("#lecture");
+  const assignmentContainer = document.querySelector("#assignment");
+
+  // 강의 테이블 생성
+  const lectureElement = document.createElement("div");
+  lectureElement.innerHTML = generateTableHTML(
+    thingsToDo.lecture,
+    "강의",
+    "lecture"
+  );
+  lectureFragment.appendChild(lectureElement);
+
+  // 과제 테이블 생성
+  const assignmentElement = document.createElement("div");
+  assignmentElement.innerHTML = generateTableHTML(
     thingsToDo.assignment,
     "과제",
     "assignment"
   );
+  assignmentFragment.appendChild(assignmentElement);
 
-  // DOM에 삽입
-  document.querySelector("#lecture").innerHTML = lectureHTML;
-  document.querySelector("#assignment").innerHTML = assignmentHTML;
+  // 렌더링 최적화를 위해 requestAnimationFrame 사용
+  requestAnimationFrame(() => {
+    // DOM에 한번에 삽입 (리플로우 최소화)
+    lectureContainer.innerHTML = "";
+    lectureContainer.appendChild(lectureFragment);
 
-  // 이벤트 리스너 추가
-  attachClickListeners(thingsToDo.lecture, "lecture");
-  attachClickListeners(thingsToDo.assignment, "assignment");
+    assignmentContainer.innerHTML = "";
+    assignmentContainer.appendChild(assignmentFragment);
+
+    // 카운트 업데이트
+    updateCountBadges(thingsToDo);
+
+    // 이벤트 위임 적용
+    setupEventDelegation(thingsToDo);
+  });
 }
 
 /**
- * 항목에 클릭 이벤트 리스너를 추가합니다.
+ * 이벤트 위임 설정
  */
-function attachClickListeners(items, type) {
-  items.forEach((item, index) => {
-    const id = `${type}${index}`;
-    const element = document.getElementById(id);
-    if (element) {
-      element.addEventListener("click", () => {
-        chrome.tabs.create({ url: item.url, active: false });
-      });
-    }
+function setupEventDelegation(thingsToDo) {
+  // 강의 테이블 이벤트
+  document.querySelector("#lecture").addEventListener("click", (e) => {
+    handleItemClick(e, thingsToDo.lecture, "lecture");
   });
+
+  // 과제 테이블 이벤트
+  document.querySelector("#assignment").addEventListener("click", (e) => {
+    handleItemClick(e, thingsToDo.assignment, "assignment");
+  });
+}
+
+/**
+ * 클릭 이벤트 처리
+ */
+function handleItemClick(e, items, type) {
+  const titleElement = e.target.closest(".title");
+  if (!titleElement) return;
+
+  const id = titleElement.id;
+  const index = parseInt(id.replace(type, ""));
+
+  if (items[index]) {
+    chrome.tabs.create({ url: items[index].url, active: false });
+  }
 }
 
 /**
  * 데이터로부터 HTML 테이블을 생성합니다.
  */
 function generateTableHTML(data, caption, type) {
-  if (data.length === 0) {
+  if (!data || data.length === 0) {
     return `<div class="empty-message">완료할 ${caption}가 없습니다</div>`;
   }
 
+  // 템플릿 문자열 사용하여 HTML 생성 최적화
   let html = `<table class="${type}">
-      <caption>${caption}</caption>
+      <caption>${caption} <span class="badge" id="${type}-count">${data.length}</span></caption>
       <thead>
         <tr>
           <th class="colum1">과목</th>
@@ -223,68 +486,22 @@ function generateTableHTML(data, caption, type) {
       </thead>
       <tbody>`;
 
-  data.forEach((item, i) => {
-    const rowClass = i % 2 === 0 ? ' class="even"' : "";
-    html += `<tr${rowClass}>
-        <td>${replaceUnderbar(item.course)}</td>
-        <td class="title" id="${type}${i}">${replaceUnderbar(item.title)}</td>
-        <td>${dateToLocaleString(item.due)}</td>
-        <td class="colum4">${msToTime(item.remainingTime_ms)}</td>
-      </tr>`;
-  });
+  // map과 join 사용하여 HTML 생성 최적화
+  html += data
+    .map((item, i) => {
+      const rowClass = i % 2 === 0 ? ' class="even"' : "";
+      const urgencyClass = getUrgencyClass(item.remainingTime_ms);
+      const urgencyClassAttr = urgencyClass ? ` class="${urgencyClass}"` : "";
+
+      return `<tr${rowClass}>
+      <td>${replaceUnderbar(item.course)}</td>
+      <td class="title" id="${type}${i}">${replaceUnderbar(item.title)}</td>
+      <td>${dateToLocaleString(item.due)}</td>
+      <td${urgencyClassAttr}>${msToTime(item.remainingTime_ms)}</td>
+    </tr>`;
+    })
+    .join("");
 
   html += "</tbody></table>";
   return html;
-}
-
-/**
- * 남은 시간을 사람이 읽기 쉬운 형식으로 변환합니다.
- */
-function msToTime(time_ms) {
-  const minutes = Math.floor((time_ms / (1000 * 60)) % 60);
-  const hours = Math.floor((time_ms / (1000 * 60 * 60)) % 24);
-  const days = Math.floor(time_ms / (1000 * 60 * 60 * 24));
-
-  if (days > 0) return `${days}일`;
-  if (hours > 0) return `${hours}시간`;
-  if (minutes > 0) return `${minutes}분`;
-  return "곧 마감";
-}
-
-/**
- * 날짜를 보기 좋은 형식으로 변환합니다.
- */
-function dateToLocaleString(date) {
-  const newDate = new Date(date);
-  return (
-    addSpace(newDate.getMonth() + 1) +
-    "월 " +
-    addSpace(newDate.getDate()) +
-    "일(" +
-    dayOfWeek(newDate) +
-    ") " +
-    newDate.toLocaleTimeString().slice(0, -3)
-  );
-}
-
-/**
- * 요일을 반환합니다.
- */
-function dayOfWeek(date) {
-  const week = ["일", "월", "화", "수", "목", "금", "토"];
-  return week[date.getDay()];
-}
-
-/**
- * 한 자리 수 앞에 공백을 추가합니다.
- */
-function addSpace(num) {
-  return num < 10 ? "  " + num : num;
-}
-
-/**
- * 언더바를 공백으로 교체합니다.
- */
-function replaceUnderbar(str) {
-  return str.replace(/_/g, " ");
 }

@@ -4,11 +4,13 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>iCampus Checker</title>
+    <script src="utils.js"></script>
     <script src="script.js" defer></script>
     <style>
       @import url(https://cdn.jsdelivr.net/gh/moonspam/NanumSquare@1.0/nanumsquare.css);
 
       :root {
+        /* 라이트 모드 변수 */
         --primary-color: #004483;
         --primary-light: rgba(0, 68, 131, 0.06);
         --primary-hover: rgba(0, 68, 131, 0.8);
@@ -17,6 +19,36 @@
         --text-color: #333;
         --text-light: #666;
         --bg-color: #fff;
+        --table-hover: rgba(0, 68, 131, 0.1);
+        --error-bg: rgba(255, 107, 91, 0.1);
+        --empty-bg: rgba(0, 0, 0, 0.03);
+        --even-row: var(--primary-light);
+
+        /* 마감 임박 색상 */
+        --urgent-color: #ff3a30;
+        --soon-color: #ff9500;
+        --warning-color: #ffcc00;
+      }
+
+      /* 다크 모드 변수 */
+      .dark-mode {
+        --primary-color: #4a89ca;
+        --primary-light: rgba(74, 137, 202, 0.15);
+        --primary-hover: rgba(74, 137, 202, 0.9);
+        --accent-color: #ff8a7d;
+        --border-color: #444;
+        --text-color: #eee;
+        --text-light: #bbb;
+        --bg-color: #222;
+        --table-hover: rgba(74, 137, 202, 0.2);
+        --error-bg: rgba(255, 107, 91, 0.2);
+        --empty-bg: rgba(255, 255, 255, 0.05);
+        --even-row: rgba(74, 137, 202, 0.1);
+
+        /* 다크모드 마감 임박 색상 */
+        --urgent-color: #ff5e57;
+        --soon-color: #ffb340;
+        --warning-color: #ffd60a;
       }
 
       * {
@@ -28,17 +60,59 @@
       body {
         font-family: "NanumSquare", sans-serif;
         font-size: 0.9rem;
-        width: 600px;
+        width: 640px;
         color: var(--text-color);
         background-color: var(--bg-color);
         padding: 15px;
+        transition: background-color 0.3s, color 0.3s;
+      }
+
+      .header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+        padding: 0 10px;
       }
 
       h1 {
+        flex-grow: 1;
         text-align: center;
-        margin-bottom: 20px;
         color: var(--primary-color);
         font-size: 1.8rem;
+      }
+
+      .btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 1.2rem;
+        color: var(--primary-color);
+        padding: 8px;
+        border-radius: 50%;
+        transition: background-color 0.3s, transform 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .btn:hover {
+        background-color: var(--primary-light);
+      }
+
+      .btn:active {
+        transform: scale(0.95);
+      }
+
+      #theme-toggle::after {
+        content: "🌙";
+      }
+
+      .dark-mode #theme-toggle::after {
+        content: "☀️";
+      }
+
+      #refresh-button::after {
+        content: "🔄";
       }
 
       .container {
@@ -54,7 +128,6 @@
         border-bottom: 1px solid var(--border-color);
         margin: 10px auto;
         width: 100%;
-        max-width: 580px;
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
         border-radius: 6px;
         overflow: hidden;
@@ -67,6 +140,9 @@
         margin-left: 10px;
         font-size: 1.4em;
         color: var(--primary-color);
+        display: flex;
+        align-items: center;
+        gap: 8px;
       }
 
       table .colum1 {
@@ -78,7 +154,7 @@
       }
 
       table .colum4 {
-        width: 60px;
+        width: 70px;
         text-align: center;
       }
 
@@ -96,16 +172,17 @@
       }
 
       table tbody tr:hover {
-        background-color: rgba(0, 68, 131, 0.1);
+        background-color: var(--table-hover);
       }
 
       table td {
         padding: 10px;
         vertical-align: middle;
+        border-top: 1px solid var(--border-color);
       }
 
       table .even {
-        background: var(--primary-light);
+        background: var(--even-row);
       }
 
       .title {
@@ -124,46 +201,6 @@
         color: var(--primary-hover);
       }
 
-      .caption {
-        position: relative;
-        display: inline-block;
-      }
-
-      .caption .tooltip {
-        visibility: hidden;
-        font-size: 1rem;
-        width: 248px;
-        background-color: #ffee58;
-        color: #2e2e2e;
-        text-align: left;
-        border-radius: 10px;
-        padding: 6px 15px;
-        position: absolute;
-        z-index: 1;
-        top: -237%;
-        left: 150%;
-        margin-left: -105px;
-        opacity: 0;
-        transition: opacity 0.3s;
-        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
-      }
-
-      .caption .tooltip::after {
-        content: "";
-        position: absolute;
-        bottom: -33%;
-        left: 15%;
-        margin-left: -10px;
-        border-width: 10px;
-        border-style: solid;
-        border-color: #ffee58 transparent transparent;
-      }
-
-      .caption:hover .tooltip {
-        visibility: visible;
-        opacity: 1;
-      }
-
       .badge {
         font-size: 0.7rem;
         min-width: 18px;
@@ -177,10 +214,6 @@
         box-sizing: border-box;
         padding: 0 6px;
         transition: all 0.2s;
-        position: relative;
-        top: -0.75rem;
-        right: 0.05rem;
-        z-index: 1;
       }
 
       .error-message {
@@ -188,7 +221,7 @@
         text-align: center;
         padding: 20px;
         font-weight: bold;
-        background-color: rgba(255, 107, 91, 0.1);
+        background-color: var(--error-bg);
         border-radius: 6px;
         margin: 10px 0;
       }
@@ -198,7 +231,7 @@
         text-align: center;
         padding: 20px;
         font-style: italic;
-        background-color: rgba(0, 0, 0, 0.03);
+        background-color: var(--empty-bg);
         border-radius: 6px;
       }
 
@@ -207,51 +240,72 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        padding: 30px 20px;
+        padding: 40px 20px;
       }
 
       .loading h2 {
-        margin-bottom: 15px;
+        margin-bottom: 20px;
         color: var(--primary-color);
         font-weight: normal;
       }
 
-      .loading img {
+      /* 로딩 스피너 */
+      .spinner {
         width: 40px;
         height: 40px;
+        border: 4px solid var(--primary-light);
+        border-radius: 50%;
+        border-top-color: var(--primary-color);
+        animation: spin 1s linear infinite;
       }
 
-      @media (max-width: 620px) {
-        body {
-          width: 100%;
-          padding: 10px;
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
         }
+      }
 
-        table {
-          font-size: 0.8rem;
+      /* 마감 임박 표시 */
+      .urgent {
+        color: var(--urgent-color) !important;
+        font-weight: bold;
+        animation: pulse 2s infinite;
+      }
+
+      .soon {
+        color: var(--soon-color) !important;
+        font-weight: bold;
+      }
+
+      .warning {
+        color: var(--warning-color) !important;
+      }
+
+      @keyframes pulse {
+        0% {
+          opacity: 1;
         }
-
-        table .colum1 {
-          width: 100px;
+        50% {
+          opacity: 0.7;
         }
-
-        table .colum3 {
-          width: 130px;
-        }
-
-        table .colum4 {
-          width: 50px;
+        100% {
+          opacity: 1;
         }
       }
     </style>
   </head>
   <body>
-    <h1>아캠체크</h1>
+    <div class="header">
+      <button id="theme-toggle" class="btn" aria-label="테마 변경"></button>
+      <h1>아캠체크</h1>
+      <button id="refresh-button" class="btn" aria-label="새로고침"></button>
+    </div>
+
     <div class="container" id="lecture"></div>
     <div class="container" id="assignment">
       <div class="loading">
         <h2>데이터를 불러오는 중입니다...</h2>
-        <img src="loading.svg" alt="Loading" />
+        <div class="spinner"></div>
       </div>
     </div>
   </body>
