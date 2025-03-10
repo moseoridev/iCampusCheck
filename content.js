@@ -1,5 +1,7 @@
-var getCookie = function (name) {
-  var value = document.cookie.match("(^|;) ?" + name + "=([^;]*)(;|$)");
-  return value ? value[2] : null;
-};
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(";").shift();
+  return null;
+}
 console.log("getCookie okay");
