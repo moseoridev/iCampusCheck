@@ -125,7 +125,7 @@ async function getCourseModules(courseId, courseName) {
           .forEach((item) => {
             result[item.type].push(item.data);
           });
-      })
+      }),
     );
 
     return result;
@@ -148,7 +148,7 @@ async function getAllCourseAssignments() {
 
     // 2. 각 과목별로 모듈 정보를 병렬로 가져오고 처리
     const modulePromises = courses.map((course) =>
-      getCourseModules(course.id, course.name)
+      getCourseModules(course.id, course.name),
     );
 
     // Promise.allSettled로 일부 실패해도 계속 진행

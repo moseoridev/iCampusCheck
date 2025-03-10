@@ -70,6 +70,13 @@ function toggleTheme() {
  * 데이터 새로고침
  */
 function refreshData() {
+  // 새로고침 버튼 애니메이션
+  const refreshBtn = document.getElementById("refresh-button");
+  refreshBtn.style.animation = "rotate 1s linear";
+  setTimeout(() => {
+    refreshBtn.style.animation = "";
+  }, 1000);
+
   // 캐시 초기화
   chrome.storage.local.remove(["courseData", "cacheTimestamp"], () => {
     checkTokenAndRun();
@@ -77,22 +84,58 @@ function refreshData() {
 }
 
 /**
+ * 연결 상태 업데이트
+ */
+function updateConnectionStatus(status, message) {
+  const statusDot = document.querySelector(".status-dot");
+  const statusText = document.getElementById("status-text");
+
+  if (!statusDot || !statusText) return;
+
+  // 상태 클래스 초기화
+  statusDot.classList.remove("connecting", "error");
+
+  switch (status) {
+    case "connecting":
+      statusDot.classList.add("connecting");
+      statusText.textContent = message || "서버에 연결 중...";
+      break;
+    case "error":
+      statusDot.classList.add("error");
+      statusText.textContent = message || "연결 오류";
+      break;
+    case "success":
+      statusText.textContent = message || "연결 완료";
+      break;
+  }
+}
+
+/**
  * 오류 메시지를 UI에 표시합니다.
  */
 function showError(message) {
-  document.querySelector(
-    "#assignment"
-  ).innerHTML = `<div class="error-message">${message}</div>`;
+  document.querySelector("#assignment").innerHTML =
+    `<div class="error-message">${message}</div>`;
+
+  // 연결 상태 표시 업데이트
+  updateConnectionStatus("error", "서버 연결 실패");
 }
 
 /**
  * 로딩 상태를 UI에 표시합니다.
  */
-function showLoading(message = "데이터를 불러오는 중입니다...") {
+function showLoading(
+  message = "데이터를 불러오는 중입니다...",
+  connectionMsg = "서버에 연결 중...",
+) {
   document.querySelector("#assignment").innerHTML = `
     <div class="loading">
       <h2>${message}</h2>
       <div class="spinner"></div>
+      <div class="connection-status">
+        <span class="status-dot connecting"></span>
+        <span id="status-text">${connectionMsg}</span>
+      </div>
     </div>
   `;
 }
@@ -111,6 +154,7 @@ async function checkTokenAndRun() {
     if (cachedData) {
       // 캐시된 데이터로 UI 렌더링
       renderToDoList(cachedData);
+      updateConnectionStatus("success", "캐시된 데이터 로드 완료");
 
       // 백그라운드에서 최신 데이터 확인 (TTL 초과 시에만)
       const now = Date.now();
@@ -125,6 +169,8 @@ async function checkTokenAndRun() {
       return;
     }
 
+    updateConnectionStatus("connecting", "토큰 확인 중...");
+
     // 토큰 확인
     const tokenResult = await chrome.scripting.executeScript({
       target: { tabId },
@@ -138,13 +184,14 @@ async function checkTokenAndRun() {
     const token = tokenResult[0].result;
 
     if (!token) {
+      updateConnectionStatus("connecting", "토큰 생성 시작...");
       await generateToken(tabId);
     } else {
+      updateConnectionStatus("connecting", "학습 데이터 요청 중...");
       await getLearnStatus(tabId);
     }
   } catch (error) {
     showError("데이터를 불러오는 중 오류가 발생했습니다. 다시 시도해주세요.");
-    console.log(error);
   }
 }
 
@@ -186,6 +233,11 @@ async function refreshDataInBackground(tabId) {
     });
 
     if (tokenResult[0].result) {
+      updateConnectionStatus(
+        "connecting",
+        "백그라운드에서 데이터 업데이트 중...",
+      );
+
       // 백그라운드에서 데이터 가져오기
       const results = await chrome.scripting.executeScript({
         target: { tabId },
@@ -198,6 +250,11 @@ async function refreshDataInBackground(tabId) {
           courseData: results[0].result,
           cacheTimestamp: Date.now(),
         });
+
+        updateConnectionStatus("success", "데이터 업데이트 완료");
+
+        // UI 새로고침 (선택적)
+        renderToDoList(results[0].result);
       }
     }
   } catch (error) {
@@ -227,7 +284,7 @@ async function generateToken(tabId) {
             {
               method: "GET",
               credentials: "include",
-            }
+            },
           );
 
           if (response.ok) {
@@ -261,9 +318,12 @@ async function generateToken(tabId) {
       if (firstValidCourse) {
         const { course } = firstValidCourse;
         const action_url = `https://canvas.skku.edu/courses/${course.id}/external_tools/5`;
+
+        updateConnectionStatus("connecting", "토큰 생성을 위한 탭 열기...");
+
         chrome.tabs.create({ url: action_url, active: false });
 
-        showLoading("토큰을 생성하는 중입니다...");
+        showLoading("토큰을 생성하는 중입니다...", "토큰 생성 진행 중...");
 
         // 토큰 생성 대기
         await waitForToken(tabId);
@@ -276,7 +336,7 @@ async function generateToken(tabId) {
   } catch (error) {
     if (error.name === "AbortError") {
       showError(
-        "요청 시간이 초과되었습니다. 네트워크 연결을 확인하고 다시 시도해주세요."
+        "요청 시간이 초과되었습니다. 네트워크 연결을 확인하고 다시 시도해주세요.",
       );
     } else {
       showError("토큰 생성 중 오류가 발생했습니다. 다시 시도해주세요.");
@@ -303,6 +363,12 @@ function waitForToken(tabId) {
         },
       });
 
+      attempts++;
+      updateConnectionStatus(
+        "connecting",
+        `토큰 확인 중... (${attempts}/${maxAttempts})`,
+      );
+
       if (tokenCheckResult[0].result) {
         clearInterval(timerID);
         await getLearnStatus(tabId);
@@ -312,8 +378,6 @@ function waitForToken(tabId) {
         showError("토큰 생성에 실패했습니다. 새로고침 후 다시 시도해주세요.");
         reject(new Error("Token generation timeout"));
       }
-
-      attempts++;
     };
 
     const timerID = setInterval(checkToken, 500);
@@ -325,7 +389,7 @@ function waitForToken(tabId) {
  */
 async function getLearnStatus(tabId) {
   try {
-    showLoading("학습 데이터를 가져오는 중입니다...");
+    showLoading("학습 데이터를 가져오는 중입니다...", "Canvas API 요청 중...");
 
     // AbortController로 요청 중단 기능 추가
     const controller = new AbortController();
@@ -350,6 +414,7 @@ async function getLearnStatus(tabId) {
         cacheTimestamp: Date.now(),
       });
 
+      updateConnectionStatus("success", "데이터 로드 완료");
       renderToDoList(result);
     } else {
       showError("데이터를 불러오지 못했습니다. 새로고침 후 다시 시도해주세요.");
@@ -357,7 +422,7 @@ async function getLearnStatus(tabId) {
   } catch (error) {
     if (error.name === "AbortError") {
       showError(
-        "데이터 로드 시간이 초과되었습니다. 네트워크 연결을 확인하고 다시 시도해주세요."
+        "데이터 로드 시간이 초과되었습니다. 네트워크 연결을 확인하고 다시 시도해주세요.",
       );
     } else {
       showError("데이터 로드 중 오류가 발생했습니다.");
@@ -371,20 +436,24 @@ async function getLearnStatus(tabId) {
 function updateCountBadges(data) {
   // 강의 카운트
   const lectureCount = document.getElementById("lecture-count");
-  if (data.lecture.length > 0) {
-    lectureCount.textContent = data.lecture.length;
-    lectureCount.style.display = "inline-block";
-  } else {
-    lectureCount.style.display = "none";
+  if (lectureCount) {
+    if (data.lecture.length > 0) {
+      lectureCount.textContent = data.lecture.length;
+      lectureCount.style.display = "inline-block";
+    } else {
+      lectureCount.style.display = "none";
+    }
   }
 
   // 과제 카운트
   const assignmentCount = document.getElementById("assignment-count");
-  if (data.assignment.length > 0) {
-    assignmentCount.textContent = data.assignment.length;
-    assignmentCount.style.display = "inline-block";
-  } else {
-    assignmentCount.style.display = "none";
+  if (assignmentCount) {
+    if (data.assignment.length > 0) {
+      assignmentCount.textContent = data.assignment.length;
+      assignmentCount.style.display = "inline-block";
+    } else {
+      assignmentCount.style.display = "none";
+    }
   }
 }
 
@@ -405,7 +474,7 @@ function renderToDoList(thingsToDo) {
   lectureElement.innerHTML = generateTableHTML(
     thingsToDo.lecture,
     "강의",
-    "lecture"
+    "lecture",
   );
   lectureFragment.appendChild(lectureElement);
 
@@ -414,7 +483,7 @@ function renderToDoList(thingsToDo) {
   assignmentElement.innerHTML = generateTableHTML(
     thingsToDo.assignment,
     "과제",
-    "assignment"
+    "assignment",
   );
   assignmentFragment.appendChild(assignmentElement);
 
@@ -467,6 +536,7 @@ function handleItemClick(e, items, type) {
 
 /**
  * 데이터로부터 HTML 테이블을 생성합니다.
+ * 24시간 이내 마감 항목은 강조 표시
  */
 function generateTableHTML(data, caption, type) {
   if (!data || data.length === 0) {
@@ -493,11 +563,14 @@ function generateTableHTML(data, caption, type) {
       const urgencyClass = getUrgencyClass(item.remainingTime_ms);
       const urgencyClassAttr = urgencyClass ? ` class="${urgencyClass}"` : "";
 
+      // 24시간 이내인 경우 특별한 처리
+      const timeDisplay = msToTime(item.remainingTime_ms);
+
       return `<tr${rowClass}>
       <td>${replaceUnderbar(item.course)}</td>
       <td class="title" id="${type}${i}">${replaceUnderbar(item.title)}</td>
       <td>${dateToLocaleString(item.due)}</td>
-      <td${urgencyClassAttr}>${msToTime(item.remainingTime_ms)}</td>
+      <td${urgencyClassAttr}>${timeDisplay}</td>
     </tr>`;
     })
     .join("");

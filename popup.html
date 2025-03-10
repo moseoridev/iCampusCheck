@@ -1,10 +1,11 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>iCampus Checker</title>
-    <script src="utils.js"></script>
+    <!-- utils.js 스크립트 추가 -->
+    <script src="utils.js" defer></script>
     <script src="script.js" defer></script>
     <style>
       @import url(https://cdn.jsdelivr.net/gh/moonspam/NanumSquare@1.0/nanumsquare.css);
@@ -15,7 +16,7 @@
         --primary-light: rgba(0, 68, 131, 0.06);
         --primary-hover: rgba(0, 68, 131, 0.8);
         --accent-color: #ff6b5b;
-        --border-color: #ccc;
+        --border-color: #ddd;
         --text-color: #333;
         --text-light: #666;
         --bg-color: #fff;
@@ -23,32 +24,103 @@
         --error-bg: rgba(255, 107, 91, 0.1);
         --empty-bg: rgba(0, 0, 0, 0.03);
         --even-row: var(--primary-light);
+        --table-header: var(--primary-color);
+        --table-header-text: white;
+        --shadow-color: rgba(0, 0, 0, 0.1);
 
         /* 마감 임박 색상 */
-        --urgent-color: #ff3a30;
-        --soon-color: #ff9500;
-        --warning-color: #ffcc00;
+        --urgent-color: #ff3a30; /* 6시간 이내 */
+        --soon-color: #ff9500; /* 12시간 이내 */
+        --warning-color: #ffcc00; /* 24시간 이내 */
       }
 
-      /* 다크 모드 변수 */
+      /* 다크 모드 변수 - 완전히 개선된 가시성 */
       .dark-mode {
-        --primary-color: #4a89ca;
-        --primary-light: rgba(74, 137, 202, 0.15);
-        --primary-hover: rgba(74, 137, 202, 0.9);
+        /* 기본 색상 */
+        --primary-color: #4dabff; /* 더 밝고 선명한 파란색 */
+        --primary-light: rgba(77, 171, 255, 0.2);
+        --primary-hover: rgba(77, 171, 255, 0.9);
         --accent-color: #ff8a7d;
-        --border-color: #444;
-        --text-color: #eee;
-        --text-light: #bbb;
-        --bg-color: #222;
-        --table-hover: rgba(74, 137, 202, 0.2);
-        --error-bg: rgba(255, 107, 91, 0.2);
-        --empty-bg: rgba(255, 255, 255, 0.05);
-        --even-row: rgba(74, 137, 202, 0.1);
 
-        /* 다크모드 마감 임박 색상 */
+        /* 텍스트 및 배경 */
+        --text-color: #ffffff; /* 완전 흰색으로 최대 대비 */
+        --text-light: #cccccc; /* 밝은 회색으로 보조 텍스트 */
+        --bg-color: #121212; /* 더 어두운 배경 */
+
+        /* 테이블 스타일링 */
+        --border-color: #3a3a3a; /* 어두운 회색 테두리 */
+        --table-hover: rgba(
+          77,
+          171,
+          255,
+          0.25
+        ); /* 호버 시 더 뚜렷한 하이라이트 */
+        --error-bg: rgba(255, 95, 82, 0.3); /* 에러 배경 강화 */
+        --empty-bg: rgba(255, 255, 255, 0.08);
+        --even-row: rgba(30, 30, 30, 1); /* 확실한 행 구분 */
+        --odd-row: rgba(40, 40, 40, 1); /* 홀수 행 배경 */
+        --table-header: #1e5799; /* 더 어둡고 눈에 띄는 헤더 */
+        --table-header-text: #ffffff; /* 헤더 텍스트 흰색 */
+        --shadow-color: rgba(0, 0, 0, 0.5); /* 강한 그림자 */
+
+        /* 마감 임박 색상 - 훨씬 더 뚜렷하게 */
         --urgent-color: #ff5e57;
-        --soon-color: #ffb340;
-        --warning-color: #ffd60a;
+        --soon-color: #ffbe4a;
+        --warning-color: #ffe234;
+      }
+
+      /* 다크모드 전용 추가 스타일 */
+      .dark-mode table {
+        box-shadow: 0 4px 12px var(--shadow-color);
+        border: 1px solid var(--border-color);
+      }
+
+      .dark-mode tr:nth-child(odd):not(.even) {
+        background-color: var(--odd-row);
+      }
+
+      .dark-mode tr:nth-child(even),
+      .dark-mode .even {
+        background-color: var(--even-row);
+      }
+
+      .dark-mode th {
+        border-bottom: 2px solid var(--border-color);
+      }
+
+      .dark-mode .title {
+        color: #6ebfff; /* 더 밝은 링크 색상 */
+        font-weight: 600; /* 더 굵게 */
+      }
+
+      .dark-mode .urgent {
+        color: #ff7b76 !important; /* 더 밝은 빨간색 */
+        text-shadow: 0 0 8px rgba(255, 123, 118, 0.4); /* 글로우 효과 */
+      }
+
+      .dark-mode .soon {
+        color: #ffcf70 !important; /* 더 밝은 주황색 */
+      }
+
+      .dark-mode .warning {
+        color: #ffed70 !important; /* 더 밝은 노란색 */
+      }
+
+      .dark-mode .empty-message {
+        background-color: var(--empty-bg);
+        border: 1px solid var(--border-color);
+        color: var(--text-light);
+      }
+
+      .dark-mode .error-message {
+        background-color: rgba(255, 94, 87, 0.25);
+        border-left: 4px solid #ff5e57;
+        color: #ffffff;
+      }
+
+      .dark-mode .spinner {
+        border: 5px solid rgba(77, 171, 255, 0.2);
+        border-top-color: #4dabff;
       }
 
       * {
@@ -64,7 +136,9 @@
         color: var(--text-color);
         background-color: var(--bg-color);
         padding: 15px;
-        transition: background-color 0.3s, color 0.3s;
+        transition:
+          background-color 0.3s,
+          color 0.3s;
       }
 
       .header {
@@ -89,14 +163,18 @@
         color: var(--primary-color);
         padding: 8px;
         border-radius: 50%;
-        transition: background-color 0.3s, transform 0.2s;
+        transition:
+          all 0.3s,
+          transform 0.2s;
         display: flex;
         align-items: center;
         justify-content: center;
+        margin: 0 5px;
       }
 
       .btn:hover {
         background-color: var(--primary-light);
+        transform: scale(1.05);
       }
 
       .btn:active {
@@ -122,22 +200,21 @@
       table {
         table-layout: fixed;
         border-collapse: collapse;
-        text-align: left;
+        text-align: center;
         line-height: 1.5;
-        border-top: 1px solid var(--border-color);
-        border-bottom: 1px solid var(--border-color);
+        border: none;
         margin: 10px auto;
         width: 100%;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-        border-radius: 6px;
+        box-shadow: 0 2px 8px var(--shadow-color);
+        border-radius: 8px;
         overflow: hidden;
       }
 
       table caption {
         font-weight: bold;
         text-align: left;
-        padding: 10px 0;
-        margin-left: 10px;
+        padding: 10px 15px;
+        margin-left: 0;
         font-size: 1.4em;
         color: var(--primary-color);
         display: flex;
@@ -154,7 +231,7 @@
       }
 
       table .colum4 {
-        width: 70px;
+        width: 80px;
         text-align: center;
       }
 
@@ -163,8 +240,8 @@
         font-weight: bold;
         vertical-align: middle;
         text-align: center;
-        color: white;
-        background: var(--primary-color);
+        color: var(--table-header-text);
+        background: var(--table-header);
       }
 
       table tbody tr {
@@ -176,7 +253,7 @@
       }
 
       table td {
-        padding: 10px;
+        padding: 12px 10px;
         vertical-align: middle;
         border-top: 1px solid var(--border-color);
       }
@@ -194,6 +271,7 @@
         cursor: pointer;
         color: var(--primary-color);
         transition: all 0.2s;
+        font-weight: 500;
       }
 
       .title:hover {
@@ -203,9 +281,9 @@
 
       .badge {
         font-size: 0.7rem;
-        min-width: 18px;
-        line-height: 18px;
-        border-radius: 9px;
+        min-width: 20px;
+        line-height: 20px;
+        border-radius: 10px;
         background: var(--accent-color);
         color: white;
         display: inline-block;
@@ -214,16 +292,19 @@
         box-sizing: border-box;
         padding: 0 6px;
         transition: all 0.2s;
+        font-weight: bold;
       }
 
       .error-message {
-        color: var(--accent-color);
-        text-align: center;
-        padding: 20px;
-        font-weight: bold;
+        color: #fff;
         background-color: var(--error-bg);
-        border-radius: 6px;
-        margin: 10px 0;
+        border-radius: 8px;
+        margin: 15px 0;
+        padding: 20px;
+        text-align: center;
+        font-weight: bold;
+        box-shadow: 0 2px 8px var(--shadow-color);
+        border-left: 4px solid var(--accent-color);
       }
 
       .empty-message {
@@ -232,7 +313,9 @@
         padding: 20px;
         font-style: italic;
         background-color: var(--empty-bg);
-        border-radius: 6px;
+        border-radius: 8px;
+        margin: 15px 0;
+        box-shadow: 0 2px 4px var(--shadow-color);
       }
 
       .loading {
@@ -249,17 +332,26 @@
         font-weight: normal;
       }
 
-      /* 로딩 스피너 */
+      /* 로딩 스피너 개선 */
       .spinner {
-        width: 40px;
-        height: 40px;
-        border: 4px solid var(--primary-light);
+        width: 48px;
+        height: 48px;
+        border: 5px solid var(--primary-light);
         border-radius: 50%;
         border-top-color: var(--primary-color);
-        animation: spin 1s linear infinite;
+        animation: spin 1s ease-in-out infinite;
       }
 
       @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      @keyframes rotate {
+        from {
+          transform: rotate(0deg);
+        }
         to {
           transform: rotate(360deg);
         }
@@ -269,7 +361,7 @@
       .urgent {
         color: var(--urgent-color) !important;
         font-weight: bold;
-        animation: pulse 2s infinite;
+        animation: pulse 1.5s infinite;
       }
 
       .soon {
@@ -279,6 +371,7 @@
 
       .warning {
         color: var(--warning-color) !important;
+        font-weight: 600;
       }
 
       @keyframes pulse {
@@ -286,19 +379,124 @@
           opacity: 1;
         }
         50% {
-          opacity: 0.7;
+          opacity: 0.6;
         }
         100% {
           opacity: 1;
         }
       }
+
+      /* 새 기능: 툴팁 스타일 개선 */
+      .tooltip-container {
+        position: relative;
+        display: inline-block;
+      }
+
+      .tooltip {
+        visibility: hidden;
+        position: absolute;
+        z-index: 1;
+        bottom: 125%;
+        left: 50%;
+        transform: translateX(-50%);
+        min-width: 160px;
+        background-color: var(--primary-color);
+        color: white;
+        text-align: center;
+        padding: 8px 12px;
+        border-radius: 6px;
+        opacity: 0;
+        transition: opacity 0.3s;
+        box-shadow: 0 2px 10px var(--shadow-color);
+        font-size: 0.85rem;
+        white-space: nowrap;
+      }
+
+      .tooltip::after {
+        content: "";
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        margin-left: -5px;
+        border-width: 5px;
+        border-style: solid;
+        border-color: var(--primary-color) transparent transparent transparent;
+      }
+
+      .tooltip-container:hover .tooltip {
+        visibility: visible;
+        opacity: 1;
+      }
+
+      /* 진행 상황 표시 */
+      .connection-status {
+        font-size: 0.8rem;
+        color: var(--text-light);
+        text-align: center;
+        margin-top: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+      }
+
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: #4ade80; /* 성공 */
+        display: inline-block;
+      }
+
+      .status-dot.connecting {
+        background-color: #facc15; /* 연결 중 */
+      }
+
+      .status-dot.error {
+        background-color: #f87171; /* 오류 */
+      }
+
+      /* 크레딧 스타일 */
+      .footer {
+        text-align: right;
+        padding: 15px 15px 0 15px;
+        margin-top: 20px;
+        border-top: 1px solid var(--border-color);
+        color: var(--text-light);
+        font-size: 0.8rem;
+        opacity: 0.8;
+        transition: opacity 0.3s;
+      }
+
+      .footer:hover {
+        opacity: 1;
+      }
+
+      .footer a {
+        color: var(--primary-color);
+        text-decoration: none;
+        transition: all 0.2s;
+      }
+
+      .footer a:hover {
+        text-decoration: underline;
+        color: var(--primary-hover);
+      }
     </style>
   </head>
   <body>
     <div class="header">
-      <button id="theme-toggle" class="btn" aria-label="테마 변경"></button>
+      <button id="theme-toggle" class="btn" aria-label="테마 변경">
+        <span class="tooltip-container">
+          <span class="tooltip">다크모드 전환</span>
+        </span>
+      </button>
       <h1>아캠체크</h1>
-      <button id="refresh-button" class="btn" aria-label="새로고침"></button>
+      <button id="refresh-button" class="btn" aria-label="새로고침">
+        <span class="tooltip-container">
+          <span class="tooltip">새로고침</span>
+        </span>
+      </button>
     </div>
 
     <div class="container" id="lecture"></div>
@@ -306,7 +504,25 @@
       <div class="loading">
         <h2>데이터를 불러오는 중입니다...</h2>
         <div class="spinner"></div>
+        <div class="connection-status">
+          <span class="status-dot connecting"></span>
+          <span id="status-text">서버에 연결 중...</span>
+        </div>
       </div>
     </div>
+
+    <!-- 크레딧 푸터 -->
+    <footer class="footer">
+      <p>
+        Originally created by
+        <a href="https://github.com/ductility/iCampusCheck" target="_blank"
+          >ductility</a
+        >
+        | Enhanced by
+        <a href="https://github.com/moseoridev/iCampusCheck" target="_blank"
+          >moseoridev</a
+        >
+      </p>
+    </footer>
   </body>
 </html>

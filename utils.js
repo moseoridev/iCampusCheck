@@ -12,16 +12,22 @@ function getTimeGap(now, date) {
 
 /**
  * 밀리초를 사람이 읽기 쉬운 형식으로 변환합니다.
+ * 24시간 이내는 시간/분 단위로 표시
  */
 function msToTime(time_ms) {
   const minutes = Math.floor((time_ms / (1000 * 60)) % 60);
   const hours = Math.floor((time_ms / (1000 * 60 * 60)) % 24);
   const days = Math.floor(time_ms / (1000 * 60 * 60 * 24));
 
-  if (days > 0) return `${days}일`;
-  if (hours > 0) return `${hours}시간`;
-  if (minutes > 0) return `${minutes}분`;
-  return "곧 마감";
+  // 24시간 이내인 경우 시간:분 형식으로 표시
+  if (days === 0) {
+    if (hours === 0) {
+      return `${minutes}분`;
+    }
+    return `${hours}시간 ${minutes > 0 ? minutes + "분" : ""}`;
+  }
+
+  return `${days}일`;
 }
 
 /**
@@ -74,9 +80,9 @@ function sortByRemainingTime(items) {
  * 마감 임박도에 따른 클래스를 반환합니다.
  */
 function getUrgencyClass(remainingTime_ms) {
-  const hours6 = 6 * 60 * 60 * 1000;
-  const hours12 = 12 * 60 * 60 * 1000;
-  const hours24 = 24 * 60 * 60 * 1000;
+  const hours6 = 6 * 60 * 60 * 1000; // 6시간
+  const hours12 = 12 * 60 * 60 * 1000; // 12시간
+  const hours24 = 24 * 60 * 60 * 1000; // 24시간
 
   if (remainingTime_ms <= hours6) return "urgent";
   if (remainingTime_ms <= hours12) return "soon";
