@@ -1,9 +1,8 @@
 {
   "manifest_version": 3,
-
-  "name": "iCampus Check",
-  "description": "Show to-do list on SKKU iCampus",
-  "version": "0.1.6",
+  "name": "iCampus Checker - SKKU",
+  "description": "성균관대학교 iCampus의 강의와 과제 일정을 효율적으로 관리하는 도구",
+  "version": "1.0.0",
 
   "browser_specific_settings": {
     "gecko": {
@@ -15,7 +14,7 @@
   "content_scripts": [
     {
       "matches": ["*://canvas.skku.edu/*"],
-      "js": ["content.js", "jquery-3.7.1.min.js"]
+      "js": ["content.js"]
     }
   ],
 
@@ -24,15 +23,21 @@
   },
 
   "action": {
-    "default_icon": "icon.png",
-    "default_popup": "popup.html"
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_popup": "popup.html",
+    "default_title": "iCampus Checker"
   },
 
   "icons": {
-    "128": "icon.png"
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
   },
 
   "host_permissions": ["*://canvas.skku.edu/*"],
-
-  "permissions": ["scripting", "tabs", "activeTab"]
+  "permissions": ["scripting", "tabs"]
 }

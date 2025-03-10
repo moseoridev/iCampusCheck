@@ -1,64 +1,134 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
   <head>
     <meta charset="utf-8" />
-    <script src="script.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>iCampus Checker</title>
+    <script src="script.js" defer></script>
     <style>
       @import url(https://cdn.jsdelivr.net/gh/moonspam/NanumSquare@1.0/nanumsquare.css);
+
+      :root {
+        --primary-color: #004483;
+        --primary-light: rgba(0, 68, 131, 0.06);
+        --primary-hover: rgba(0, 68, 131, 0.8);
+        --accent-color: #ff6b5b;
+        --border-color: #ccc;
+        --text-color: #333;
+        --text-light: #666;
+        --bg-color: #fff;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: "NanumSquare", sans-serif;
+        font-size: 0.9rem;
+        width: 600px;
+        color: var(--text-color);
+        background-color: var(--bg-color);
+        padding: 15px;
+      }
+
+      h1 {
+        text-align: center;
+        margin-bottom: 20px;
+        color: var(--primary-color);
+        font-size: 1.8rem;
+      }
+
+      .container {
+        margin-bottom: 20px;
+      }
+
       table {
         table-layout: fixed;
         border-collapse: collapse;
         text-align: left;
         line-height: 1.5;
-        border-top: 1px solid #ccc;
-        border-bottom: 1px solid #ccc;
-        margin: auto;
-        width: 580px;
+        border-top: 1px solid var(--border-color);
+        border-bottom: 1px solid var(--border-color);
+        margin: 10px auto;
+        width: 100%;
+        max-width: 580px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        border-radius: 6px;
+        overflow: hidden;
       }
+
       table caption {
         font-weight: bold;
         text-align: left;
-        margin-left: 270px;
+        padding: 10px 0;
+        margin-left: 10px;
         font-size: 1.4em;
+        color: var(--primary-color);
       }
+
       table .colum1 {
         width: 130px;
       }
+
       table .colum3 {
         width: 160px;
       }
+
       table .colum4 {
-        width: 55px;
+        width: 60px;
         text-align: center;
       }
+
       table thead th {
-        padding: 10px;
+        padding: 12px 10px;
         font-weight: bold;
-        vertical-align: top;
+        vertical-align: middle;
         text-align: center;
-        color: #fff;
-        background: #004483eb;
-        margin: 20px 10px;
+        color: white;
+        background: var(--primary-color);
       }
+
+      table tbody tr {
+        transition: background-color 0.2s;
+      }
+
+      table tbody tr:hover {
+        background-color: rgba(0, 68, 131, 0.1);
+      }
+
       table td {
         padding: 10px;
-        vertical-align: top;
+        vertical-align: middle;
       }
+
       table .even {
-        background: #0044830f;
+        background: var(--primary-light);
       }
+
+      .title {
+        position: relative;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 200px;
+        cursor: pointer;
+        color: var(--primary-color);
+        transition: all 0.2s;
+      }
+
       .title:hover {
-        cursor: pointer;
         text-decoration: underline;
+        color: var(--primary-hover);
       }
-      #poster:hover {
-        cursor: pointer;
-        text-decoration: underline;
-      }
+
       .caption {
         position: relative;
         display: inline-block;
       }
+
       .caption .tooltip {
         visibility: hidden;
         font-size: 1rem;
@@ -73,7 +143,11 @@
         top: -237%;
         left: 150%;
         margin-left: -105px;
+        opacity: 0;
+        transition: opacity 0.3s;
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
       }
+
       .caption .tooltip::after {
         content: "";
         position: absolute;
@@ -84,16 +158,19 @@
         border-style: solid;
         border-color: #ffee58 transparent transparent;
       }
+
       .caption:hover .tooltip {
         visibility: visible;
+        opacity: 1;
       }
+
       .badge {
-        font-size: 0.6875rem;
+        font-size: 0.7rem;
         min-width: 18px;
         line-height: 18px;
         border-radius: 9px;
-        background: #ff6b5b;
-        color: #fff;
+        background: var(--accent-color);
+        color: white;
         display: inline-block;
         vertical-align: middle;
         text-align: center;
@@ -105,21 +182,77 @@
         right: 0.05rem;
         z-index: 1;
       }
-      body {
-        font-family: "NanumSquare", sans-serif;
-        font-size: 0.9rem;
-        width: 600px;
+
+      .error-message {
+        color: var(--accent-color);
+        text-align: center;
+        padding: 20px;
+        font-weight: bold;
+        background-color: rgba(255, 107, 91, 0.1);
+        border-radius: 6px;
+        margin: 10px 0;
+      }
+
+      .empty-message {
+        color: var(--text-light);
+        text-align: center;
+        padding: 20px;
+        font-style: italic;
+        background-color: rgba(0, 0, 0, 0.03);
+        border-radius: 6px;
+      }
+
+      .loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 30px 20px;
+      }
+
+      .loading h2 {
+        margin-bottom: 15px;
+        color: var(--primary-color);
+        font-weight: normal;
+      }
+
+      .loading img {
+        width: 40px;
+        height: 40px;
+      }
+
+      @media (max-width: 620px) {
+        body {
+          width: 100%;
+          padding: 10px;
+        }
+
+        table {
+          font-size: 0.8rem;
+        }
+
+        table .colum1 {
+          width: 100px;
+        }
+
+        table .colum3 {
+          width: 130px;
+        }
+
+        table .colum4 {
+          width: 50px;
+        }
       }
     </style>
   </head>
   <body>
-    <h1 style="text-align: center">아캠체크</h1>
-    <p></p>
-    <div id="lecture"></div>
-    <p></p>
-    <div id="assignment">
-      <h2 style="font-weight: bold; padding: 10px">Loading...</h2>
-      <img src="loading.svg" style="padding: 9px" alt="Loading" />
+    <h1>아캠체크</h1>
+    <div class="container" id="lecture"></div>
+    <div class="container" id="assignment">
+      <div class="loading">
+        <h2>데이터를 불러오는 중입니다...</h2>
+        <img src="loading.svg" alt="Loading" />
+      </div>
     </div>
   </body>
 </html>

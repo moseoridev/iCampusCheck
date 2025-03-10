@@ -1,44 +1,51 @@
-// Function to enable or disable the extension
+/**
+ * 확장 프로그램의 활성화 상태를 설정합니다.
+ *
+ * @param {number} tabId - 대상 탭 ID
+ * @param {boolean} enabled - 활성화 여부
+ */
 function setExtensionState(tabId, enabled) {
-  if (enabled) {
-    chrome.action.enable(tabId);
-    chrome.action.setIcon({
-      tabId: tabId,
-      path: "icon.png",
-    });
-  } else {
-    chrome.action.disable(tabId);
-    chrome.action.setIcon({
-      tabId: tabId,
-      path: "icon_disabled.png",
-    });
-  }
+  const iconPath = enabled ? "icons/icon128.png" : "icons/icon_disabled.png";
+
+  chrome.action.setIcon({ tabId, path: iconPath });
+  chrome.action[enabled ? "enable" : "disable"](tabId);
 }
 
-// Listen for tab updates
+/**
+ * 주어진 URL이 캔버스 도메인인지 확인합니다.
+ *
+ * @param {string} url - 확인할 URL
+ * @return {boolean} 캔버스 도메인 여부
+ */
+function isCanvasUrl(url) {
+  return url && url.includes("canvas.skku.edu");
+}
+
+/**
+ * 탭의 URL을 기반으로 확장 프로그램 상태를 업데이트합니다.
+ *
+ * @param {number} tabId - 대상 탭 ID
+ * @param {string} url - 탭 URL
+ */
+function updateExtensionForTab(tabId, url) {
+  setExtensionState(tabId, isCanvasUrl(url));
+}
+
+// 탭 URL 변경 감지
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.url) {
-    const enabled = changeInfo.url.includes("canvas.skku.edu");
-    setExtensionState(tabId, enabled);
+    updateExtensionForTab(tabId, changeInfo.url);
   }
 });
 
-// Check already open tabs when the service worker starts
+// 서비스 워커 시작 시 열린 탭 확인
 chrome.tabs.query({}).then((tabs) => {
-  for (let tab of tabs) {
-    if (tab.url) {
-      const enabled = tab.url.includes("canvas.skku.edu");
-      setExtensionState(tab.id, enabled);
-    }
-  }
+  tabs.forEach((tab) => updateExtensionForTab(tab.id, tab.url));
 });
 
-// Listen for tab activation
+// 탭 활성화 감지
 chrome.tabs.onActivated.addListener((activeInfo) => {
   chrome.tabs.get(activeInfo.tabId).then((tab) => {
-    if (tab.url) {
-      const enabled = tab.url.includes("canvas.skku.edu");
-      setExtensionState(tab.id, enabled);
-    }
+    updateExtensionForTab(tab.id, tab.url);
   });
 });
