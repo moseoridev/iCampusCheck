@@ -530,7 +530,7 @@ function handleItemClick(e, items, type) {
   const index = parseInt(id.replace(type, ""));
 
   if (items[index]) {
-    chrome.tabs.create({ url: items[index].url, active: false });
+    chrome.tabs.create({ url: items[index].url, active: true });
   }
 }
 

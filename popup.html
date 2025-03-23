@@ -8,120 +8,8 @@
     <script src="utils.js" defer></script>
     <script src="script.js" defer></script>
     <style>
-      @import url(https://cdn.jsdelivr.net/gh/moonspam/NanumSquare@1.0/nanumsquare.css);
-
-      :root {
-        /* 라이트 모드 변수 */
-        --primary-color: #004483;
-        --primary-light: rgba(0, 68, 131, 0.06);
-        --primary-hover: rgba(0, 68, 131, 0.8);
-        --accent-color: #ff6b5b;
-        --border-color: #ddd;
-        --text-color: #333;
-        --text-light: #666;
-        --bg-color: #fff;
-        --table-hover: rgba(0, 68, 131, 0.1);
-        --error-bg: rgba(255, 107, 91, 0.1);
-        --empty-bg: rgba(0, 0, 0, 0.03);
-        --even-row: var(--primary-light);
-        --table-header: var(--primary-color);
-        --table-header-text: white;
-        --shadow-color: rgba(0, 0, 0, 0.1);
-
-        /* 마감 임박 색상 */
-        --urgent-color: #ff3a30; /* 6시간 이내 */
-        --soon-color: #ff9500; /* 12시간 이내 */
-        --warning-color: #ffcc00; /* 24시간 이내 */
-      }
-
-      /* 다크 모드 변수 - 완전히 개선된 가시성 */
-      .dark-mode {
-        /* 기본 색상 */
-        --primary-color: #4dabff; /* 더 밝고 선명한 파란색 */
-        --primary-light: rgba(77, 171, 255, 0.2);
-        --primary-hover: rgba(77, 171, 255, 0.9);
-        --accent-color: #ff8a7d;
-
-        /* 텍스트 및 배경 */
-        --text-color: #ffffff; /* 완전 흰색으로 최대 대비 */
-        --text-light: #cccccc; /* 밝은 회색으로 보조 텍스트 */
-        --bg-color: #121212; /* 더 어두운 배경 */
-
-        /* 테이블 스타일링 */
-        --border-color: #3a3a3a; /* 어두운 회색 테두리 */
-        --table-hover: rgba(
-          77,
-          171,
-          255,
-          0.25
-        ); /* 호버 시 더 뚜렷한 하이라이트 */
-        --error-bg: rgba(255, 95, 82, 0.3); /* 에러 배경 강화 */
-        --empty-bg: rgba(255, 255, 255, 0.08);
-        --even-row: rgba(30, 30, 30, 1); /* 확실한 행 구분 */
-        --odd-row: rgba(40, 40, 40, 1); /* 홀수 행 배경 */
-        --table-header: #1e5799; /* 더 어둡고 눈에 띄는 헤더 */
-        --table-header-text: #ffffff; /* 헤더 텍스트 흰색 */
-        --shadow-color: rgba(0, 0, 0, 0.5); /* 강한 그림자 */
-
-        /* 마감 임박 색상 - 훨씬 더 뚜렷하게 */
-        --urgent-color: #ff5e57;
-        --soon-color: #ffbe4a;
-        --warning-color: #ffe234;
-      }
-
-      /* 다크모드 전용 추가 스타일 */
-      .dark-mode table {
-        box-shadow: 0 4px 12px var(--shadow-color);
-        border: 1px solid var(--border-color);
-      }
-
-      .dark-mode tr:nth-child(odd):not(.even) {
-        background-color: var(--odd-row);
-      }
-
-      .dark-mode tr:nth-child(even),
-      .dark-mode .even {
-        background-color: var(--even-row);
-      }
-
-      .dark-mode th {
-        border-bottom: 2px solid var(--border-color);
-      }
-
-      .dark-mode .title {
-        color: #6ebfff; /* 더 밝은 링크 색상 */
-        font-weight: 600; /* 더 굵게 */
-      }
-
-      .dark-mode .urgent {
-        color: #ff7b76 !important; /* 더 밝은 빨간색 */
-        text-shadow: 0 0 8px rgba(255, 123, 118, 0.4); /* 글로우 효과 */
-      }
-
-      .dark-mode .soon {
-        color: #ffcf70 !important; /* 더 밝은 주황색 */
-      }
-
-      .dark-mode .warning {
-        color: #ffed70 !important; /* 더 밝은 노란색 */
-      }
-
-      .dark-mode .empty-message {
-        background-color: var(--empty-bg);
-        border: 1px solid var(--border-color);
-        color: var(--text-light);
-      }
-
-      .dark-mode .error-message {
-        background-color: rgba(255, 94, 87, 0.25);
-        border-left: 4px solid #ff5e57;
-        color: #ffffff;
-      }
-
-      .dark-mode .spinner {
-        border: 5px solid rgba(77, 171, 255, 0.2);
-        border-top-color: #4dabff;
-      }
+      /* ===== 1. 폰트 및 기본 설정 ===== */
+      @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css");
 
       * {
         box-sizing: border-box;
@@ -129,10 +17,71 @@
         padding: 0;
       }
 
+      /* ===== 2. 색상 변수 (라이트 모드) ===== */
+      :root {
+        /* 기본 색상 */
+        --primary-color: #004483;
+        --primary-light: rgba(0, 68, 131, 0.06);
+        --primary-hover: rgba(0, 68, 131, 0.8);
+        --accent-color: #ff6b5b;
+
+        /* 텍스트 및 배경 */
+        --text-color: #333;
+        --text-light: #666;
+        --bg-color: #fff;
+
+        /* 테이블 및 경계 */
+        --border-color: #ddd;
+        --table-hover: rgba(0, 68, 131, 0.1);
+        --error-bg: rgba(255, 107, 91, 0.1);
+        --empty-bg: rgba(0, 0, 0, 0.03);
+        --even-row: rgba(0, 68, 131, 0.06);
+        --odd-row: transparent;
+        --table-header: #004483;
+        --table-header-text: white;
+        --shadow-color: rgba(0, 0, 0, 0.1);
+
+        /* 마감 임박 색상 */
+        --urgent-color: #ff3a30;
+        --soon-color: #ff9500;
+        --warning-color: #ffcc00;
+      }
+
+      /* ===== 3. 다크 모드 변수 ===== */
+      .dark-mode {
+        /* 기본 색상 */
+        --primary-color: #4dabff;
+        --primary-light: rgba(77, 171, 255, 0.2);
+        --primary-hover: rgba(77, 171, 255, 0.9);
+        --accent-color: #ff8a7d;
+
+        /* 텍스트 및 배경 */
+        --text-color: #ffffff;
+        --text-light: #cccccc;
+        --bg-color: #121212;
+
+        /* 테이블 및 경계 */
+        --border-color: #3a3a3a;
+        --table-hover: rgba(77, 171, 255, 0.25);
+        --error-bg: rgba(255, 95, 82, 0.3);
+        --empty-bg: rgba(255, 255, 255, 0.08);
+        --even-row: rgba(30, 30, 30, 1);
+        --odd-row: rgba(40, 40, 40, 1);
+        --table-header: #1e5799;
+        --table-header-text: #ffffff;
+        --shadow-color: rgba(0, 0, 0, 0.5);
+
+        /* 마감 임박 색상 */
+        --urgent-color: #ff5e57;
+        --soon-color: #ffbe4a;
+        --warning-color: #ffe234;
+      }
+
+      /* ===== 4. 기본 레이아웃 스타일 ===== */
       body {
-        font-family: "NanumSquare", sans-serif;
+        font-family: "Pretendard", sans-serif;
         font-size: 0.9rem;
-        width: 640px;
+        width: 700px;
         color: var(--text-color);
         background-color: var(--bg-color);
         padding: 15px;
@@ -141,10 +90,15 @@
           color 0.3s;
       }
 
+      .container {
+        margin-bottom: 20px;
+      }
+
+      /* ===== 5. 헤더 및 버튼 스타일 ===== */
       .header {
         display: flex;
         align-items: center;
-        margin-bottom: 20px;
+        margin-bottom: 15px;
         padding: 0 10px;
       }
 
@@ -164,7 +118,7 @@
         padding: 8px;
         border-radius: 50%;
         transition:
-          all 0.3s,
+          background-color 0.3s,
           transform 0.2s;
         display: flex;
         align-items: center;
@@ -193,19 +147,16 @@
         content: "🔄";
       }
 
-      .container {
-        margin-bottom: 20px;
-      }
-
+      /* ===== 6. 테이블 스타일 ===== */
       table {
         table-layout: fixed;
         border-collapse: collapse;
         text-align: center;
         line-height: 1.5;
-        border: none;
         margin: 10px auto;
         width: 100%;
         box-shadow: 0 2px 8px var(--shadow-color);
+        border: 1px solid var(--border-color);
         border-radius: 8px;
         overflow: hidden;
       }
@@ -214,7 +165,6 @@
         font-weight: bold;
         text-align: left;
         padding: 10px 15px;
-        margin-left: 0;
         font-size: 1.4em;
         color: var(--primary-color);
         display: flex;
@@ -225,11 +175,9 @@
       table .colum1 {
         width: 130px;
       }
-
       table .colum3 {
         width: 160px;
       }
-
       table .colum4 {
         width: 80px;
         text-align: center;
@@ -242,10 +190,19 @@
         text-align: center;
         color: var(--table-header-text);
         background: var(--table-header);
+        border-bottom: 1px solid var(--border-color);
       }
 
       table tbody tr {
         transition: background-color 0.2s;
+      }
+
+      table tbody tr:nth-child(odd) {
+        background-color: var(--odd-row);
+      }
+
+      table tbody tr:nth-child(even) {
+        background-color: var(--even-row);
       }
 
       table tbody tr:hover {
@@ -258,10 +215,6 @@
         border-top: 1px solid var(--border-color);
       }
 
-      table .even {
-        background: var(--even-row);
-      }
-
       .title {
         position: relative;
         overflow: hidden;
@@ -270,8 +223,8 @@
         max-width: 200px;
         cursor: pointer;
         color: var(--primary-color);
-        transition: all 0.2s;
-        font-weight: 500;
+        transition: color 0.2s;
+        font-weight: 600;
       }
 
       .title:hover {
@@ -289,75 +242,37 @@
         display: inline-block;
         vertical-align: middle;
         text-align: center;
-        box-sizing: border-box;
         padding: 0 6px;
-        transition: all 0.2s;
         font-weight: bold;
       }
 
-      .error-message {
-        color: #fff;
-        background-color: var(--error-bg);
+      /* ===== 7. 상태 표시 스타일 ===== */
+      .error-message,
+      .empty-message {
         border-radius: 8px;
         margin: 15px 0;
         padding: 20px;
         text-align: center;
-        font-weight: bold;
         box-shadow: 0 2px 8px var(--shadow-color);
+        border: 1px solid var(--border-color);
+        transition:
+          background-color 0.3s,
+          color 0.3s;
+      }
+
+      .error-message {
+        background-color: var(--error-bg);
+        color: #fff;
+        font-weight: bold;
         border-left: 4px solid var(--accent-color);
       }
 
       .empty-message {
-        color: var(--text-light);
-        text-align: center;
-        padding: 20px;
-        font-style: italic;
         background-color: var(--empty-bg);
-        border-radius: 8px;
-        margin: 15px 0;
-        box-shadow: 0 2px 4px var(--shadow-color);
+        color: var(--text-light);
+        font-style: italic;
       }
 
-      .loading {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 40px 20px;
-      }
-
-      .loading h2 {
-        margin-bottom: 20px;
-        color: var(--primary-color);
-        font-weight: normal;
-      }
-
-      /* 로딩 스피너 개선 */
-      .spinner {
-        width: 48px;
-        height: 48px;
-        border: 5px solid var(--primary-light);
-        border-radius: 50%;
-        border-top-color: var(--primary-color);
-        animation: spin 1s ease-in-out infinite;
-      }
-
-      @keyframes spin {
-        to {
-          transform: rotate(360deg);
-        }
-      }
-
-      @keyframes rotate {
-        from {
-          transform: rotate(0deg);
-        }
-        to {
-          transform: rotate(360deg);
-        }
-      }
-
-      /* 마감 임박 표시 */
       .urgent {
         color: var(--urgent-color) !important;
         font-weight: bold;
@@ -374,6 +289,13 @@
         font-weight: 600;
       }
 
+      /* ===== 8. 애니메이션 ===== */
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
       @keyframes pulse {
         0% {
           opacity: 1;
@@ -386,7 +308,36 @@
         }
       }
 
-      /* 새 기능: 툴팁 스타일 개선 */
+      /* ===== 9. 유틸리티 클래스 ===== */
+      .loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+      }
+
+      .loading h2 {
+        margin-bottom: 20px;
+        color: var(--primary-color);
+        font-weight: normal;
+      }
+
+      .spinner {
+        width: 48px;
+        height: 48px;
+        border: 5px solid var(--primary-light);
+        border-radius: 50%;
+        border-top-color: var(--primary-color);
+        animation: spin 1s ease-in-out infinite;
+      }
+
+      .dark-mode .spinner {
+        border-color: rgba(77, 171, 255, 0.2);
+        border-top-color: #4dabff;
+      }
+
+      /* 툴팁 스타일 */
       .tooltip-container {
         position: relative;
         display: inline-block;
@@ -428,38 +379,10 @@
         opacity: 1;
       }
 
-      /* 진행 상황 표시 */
-      .connection-status {
-        font-size: 0.8rem;
-        color: var(--text-light);
-        text-align: center;
-        margin-top: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 5px;
-      }
-
-      .status-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background-color: #4ade80; /* 성공 */
-        display: inline-block;
-      }
-
-      .status-dot.connecting {
-        background-color: #facc15; /* 연결 중 */
-      }
-
-      .status-dot.error {
-        background-color: #f87171; /* 오류 */
-      }
-
-      /* 크레딧 스타일 */
+      /* ===== 10. 푸터 스타일 ===== */
       .footer {
         text-align: right;
-        padding: 15px 15px 0 15px;
+        padding: 15px 15px 0;
         margin-top: 20px;
         border-top: 1px solid var(--border-color);
         color: var(--text-light);
@@ -475,7 +398,7 @@
       .footer a {
         color: var(--primary-color);
         text-decoration: none;
-        transition: all 0.2s;
+        transition: color 0.2s;
       }
 
       .footer a:hover {
@@ -518,9 +441,9 @@
         <a href="https://github.com/ductility/iCampusCheck" target="_blank"
           >ductility</a
         >
-        | Enhanced by
+        |
         <a href="https://github.com/moseoridev/iCampusCheck" target="_blank"
-          >moseoridev</a
+          >GitHub Repo</a
         >
       </p>
     </footer>
