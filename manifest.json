@@ -19,7 +19,8 @@
   ],
 
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "scripts": ["background.js"]
   },
 
   "action": {
@@ -29,7 +30,7 @@
       "128": "icons/icon128.png"
     },
     "default_popup": "popup.html",
-    "default_title": "iCampus Check"
+    "default_title": "iCampus Check V2"
   },
 
   "icons": {
