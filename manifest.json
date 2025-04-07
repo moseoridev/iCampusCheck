@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "iCampus Check V2",
   "description": "성균관대학교 iCampus의 강의와 과제 일정을 효율적으로 관리하는 도구",
-  "version": "0.2.0",
+  "version": "0.2.1",
 
   "browser_specific_settings": {
     "gecko": {
